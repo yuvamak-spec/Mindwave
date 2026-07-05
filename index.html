@@ -1,0 +1,893 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<meta name="theme-color" content="#04080f">
+<meta name="description" content="Mindwave — HRV-adaptive meditation and breathing">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<title>Mindwave</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;0,600;1,500&family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --abyss:#04080f;
+  --deep:#081020;
+  --pool:#0c1628;
+  --line:#14243d;
+  --cyan:#4de8e0;
+  --violet:#8b7ff0;
+  --emerald:#3fd68f;
+  --text:#d9e6f2;
+  --muted:#64788f;
+  --danger:#f07f7f;
+  --nav-h:66px;
+}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{height:100%}
+body{
+  background:var(--abyss);
+  color:var(--text);
+  font-family:'Outfit',system-ui,sans-serif;
+  font-weight:300;
+  overflow:hidden;
+  overscroll-behavior:none;
+}
+/* depth gradient behind everything */
+body::before{
+  content:"";position:fixed;inset:0;z-index:0;pointer-events:none;
+  background:
+    radial-gradient(120% 60% at 50% -10%, rgba(77,232,224,.06), transparent 60%),
+    radial-gradient(90% 50% at 85% 110%, rgba(139,127,240,.07), transparent 60%),
+    linear-gradient(180deg,#050a14 0%, #04080f 55%, #030610 100%);
+}
+h1,h2,h3,.serif{font-family:'Playfair Display',serif;font-weight:500;letter-spacing:.2px}
+#app{position:relative;z-index:1;height:100%;display:flex;flex-direction:column}
+main{
+  flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;
+  padding:22px 20px calc(var(--nav-h) + 28px + env(safe-area-inset-bottom));
+  max-width:520px;margin:0 auto;width:100%;
+}
+.screen{display:none;animation:fadeUp .35s ease}
+.screen.active{display:block}
+@keyframes fadeUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+
+/* ---------- header ---------- */
+.eyebrow{font-size:11px;letter-spacing:2.5px;text-transform:uppercase;color:var(--muted);font-weight:500;margin-bottom:6px}
+.page-title{font-size:30px;line-height:1.15;margin-bottom:4px}
+.page-sub{color:var(--muted);font-size:14px;margin-bottom:22px}
+.accent-cyan{color:var(--cyan)} .accent-violet{color:var(--violet)} .accent-emerald{color:var(--emerald)}
+
+/* ---------- cards ---------- */
+.card{
+  background:linear-gradient(180deg,var(--deep),var(--pool));
+  border:1px solid var(--line);
+  border-radius:18px;padding:18px;margin-bottom:14px;
+}
+.card h3{font-size:17px;margin-bottom:10px}
+.card .hint{font-size:13px;color:var(--muted);line-height:1.5}
+.glow-card{box-shadow:0 0 34px -14px rgba(77,232,224,.35)}
+
+/* ---------- buttons & inputs ---------- */
+button{font-family:inherit;color:inherit;border:none;background:none;cursor:pointer}
+.btn{
+  display:flex;align-items:center;justify-content:center;gap:8px;
+  width:100%;min-height:52px;border-radius:14px;
+  font-size:15px;font-weight:500;letter-spacing:.3px;
+  transition:transform .12s ease, box-shadow .2s ease;
+}
+.btn:active{transform:scale(.98)}
+.btn-primary{
+  background:linear-gradient(135deg,rgba(77,232,224,.16),rgba(139,127,240,.16));
+  border:1px solid rgba(77,232,224,.45);color:var(--cyan);
+  box-shadow:0 0 24px -8px rgba(77,232,224,.5);
+}
+.btn-ghost{border:1px solid var(--line);color:var(--muted)}
+.btn-danger{border:1px solid rgba(240,127,127,.4);color:var(--danger)}
+input[type=number],input[type=text],input[type=password],select{
+  width:100%;min-height:50px;padding:0 14px;border-radius:12px;
+  background:var(--abyss);border:1px solid var(--line);color:var(--text);
+  font-family:inherit;font-size:16px;
+}
+input:focus,select:focus{outline:2px solid rgba(77,232,224,.5);outline-offset:1px}
+label{display:block;font-size:12px;letter-spacing:1px;text-transform:uppercase;color:var(--muted);margin:14px 0 6px;font-weight:500}
+
+/* chips */
+.chip-row{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:6px}
+.chip{
+  flex:1;min-width:96px;min-height:56px;padding:8px 10px;border-radius:13px;
+  border:1px solid var(--line);color:var(--muted);font-size:13.5px;font-weight:400;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;
+  transition:all .18s ease;
+}
+.chip small{font-size:11px;opacity:.7}
+.chip.sel{border-color:var(--cyan);color:var(--cyan);background:rgba(77,232,224,.07);box-shadow:0 0 18px -8px rgba(77,232,224,.55)}
+.chip.sel-violet{border-color:var(--violet);color:var(--violet);background:rgba(139,127,240,.08);box-shadow:0 0 18px -8px rgba(139,127,240,.6)}
+
+/* ---------- stats ---------- */
+.stat-row{display:flex;gap:12px}
+.stat{flex:1;text-align:center;padding:14px 6px;border:1px solid var(--line);border-radius:15px;background:var(--deep)}
+.stat b{display:block;font-family:'Playfair Display',serif;font-size:26px;font-weight:600;color:var(--cyan)}
+.stat span{font-size:11px;letter-spacing:1.4px;text-transform:uppercase;color:var(--muted)}
+.stat.v b{color:var(--violet)} .stat.e b{color:var(--emerald)}
+
+/* ---------- orb ---------- */
+.orb-stage{position:relative;height:320px;display:flex;align-items:center;justify-content:center;margin:6px 0 10px}
+.orb{
+  position:relative;width:150px;height:150px;border-radius:50%;
+  background:radial-gradient(circle at 38% 32%, rgba(220,255,252,.95), rgba(77,232,224,.75) 28%, rgba(65,150,190,.45) 55%, rgba(139,127,240,.28) 75%, rgba(8,16,32,0) 100%);
+  box-shadow:
+    0 0 40px rgba(77,232,224,.55),
+    0 0 110px rgba(77,232,224,.28),
+    0 0 180px rgba(139,127,240,.22),
+    inset 0 0 34px rgba(255,255,255,.28);
+  transform:scale(.72);
+  transition:transform 4s cubic-bezier(.42,0,.35,1);
+  will-change:transform;
+}
+.orb::after{
+  content:"";position:absolute;inset:-26px;border-radius:50%;
+  border:1px solid rgba(77,232,224,.22);
+  animation:ringPulse 6s ease-in-out infinite;
+}
+@keyframes ringPulse{0%,100%{opacity:.25;transform:scale(1)}50%{opacity:.6;transform:scale(1.06)}}
+.orb-label{
+  position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  pointer-events:none;text-align:center;
+}
+.orb-phase{font-family:'Playfair Display',serif;font-size:24px;color:#eafffd;text-shadow:0 0 18px rgba(77,232,224,.8)}
+.orb-count{font-size:15px;color:rgba(217,230,242,.85);margin-top:4px;font-weight:400}
+/* plankton */
+.plankton{position:absolute;inset:0;overflow:hidden;pointer-events:none}
+.plankton i{
+  position:absolute;display:block;width:4px;height:4px;border-radius:50%;
+  background:var(--cyan);opacity:0;filter:blur(.5px);
+  animation:drift linear infinite;
+}
+.plankton i:nth-child(3n){background:var(--violet)}
+.plankton i:nth-child(4n){background:var(--emerald);width:3px;height:3px}
+@keyframes drift{
+  0%{transform:translateY(30px) translateX(0);opacity:0}
+  15%{opacity:.65}
+  85%{opacity:.35}
+  100%{transform:translateY(-300px) translateX(18px);opacity:0}
+}
+.session-timer{text-align:center;color:var(--muted);font-size:14px;letter-spacing:2px;margin-bottom:14px}
+
+/* ---------- nav ---------- */
+nav{
+  position:fixed;left:0;right:0;bottom:0;z-index:20;
+  height:calc(var(--nav-h) + env(safe-area-inset-bottom));
+  padding-bottom:env(safe-area-inset-bottom);
+  background:rgba(4,8,15,.88);backdrop-filter:blur(14px);
+  border-top:1px solid var(--line);
+  display:flex;max-width:520px;margin:0 auto;
+}
+nav button{
+  flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;
+  color:var(--muted);font-size:10.5px;letter-spacing:1.2px;text-transform:uppercase;font-weight:500;
+  min-height:var(--nav-h);
+}
+nav button svg{width:22px;height:22px;stroke:currentColor;fill:none;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
+nav button.on{color:var(--cyan);text-shadow:0 0 12px rgba(77,232,224,.7)}
+
+/* ---------- consent ---------- */
+#consent{
+  position:fixed;inset:0;z-index:50;background:var(--abyss);
+  display:flex;flex-direction:column;padding:34px 26px calc(24px + env(safe-area-inset-bottom));
+  overflow-y:auto;
+}
+#consent h1{font-size:34px;margin:8px 0 4px}
+#consent .wave{font-size:44px;line-height:1;color:var(--cyan);text-shadow:0 0 30px rgba(77,232,224,.8)}
+#consent p{color:var(--muted);font-size:14px;line-height:1.65;margin-bottom:14px}
+#consent ul{list-style:none;margin:6px 0 18px}
+#consent li{display:flex;gap:10px;font-size:14px;line-height:1.55;color:var(--text);margin-bottom:10px}
+#consent li::before{content:"◦";color:var(--cyan)}
+
+/* history */
+.hist{display:flex;justify-content:space-between;align-items:center;padding:13px 2px;border-bottom:1px solid var(--line);font-size:14px}
+.hist:last-child{border:none}
+.hist .l b{display:block;font-weight:500}
+.hist .l span{font-size:12px;color:var(--muted)}
+.hist .r{color:var(--cyan);font-size:13px}
+canvas{width:100%;height:120px}
+.toast{
+  position:fixed;left:50%;bottom:calc(var(--nav-h) + 24px + env(safe-area-inset-bottom));transform:translateX(-50%) translateY(20px);
+  background:var(--pool);border:1px solid rgba(77,232,224,.4);color:var(--cyan);
+  padding:11px 20px;border-radius:30px;font-size:14px;opacity:0;transition:all .3s ease;z-index:60;pointer-events:none;
+  box-shadow:0 0 24px -6px rgba(77,232,224,.5);white-space:nowrap;
+}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+.rec-banner{
+  border:1px solid rgba(139,127,240,.4);border-radius:18px;padding:16px 18px;margin-bottom:14px;
+  background:linear-gradient(135deg,rgba(139,127,240,.1),rgba(77,232,224,.06));
+  box-shadow:0 0 28px -12px rgba(139,127,240,.5);
+}
+.rec-banner .tag{font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--violet);font-weight:500}
+.rec-banner h3{font-size:19px;margin:5px 0 4px}
+.rec-banner p{font-size:13.5px;color:var(--muted);line-height:1.5}
+.row2{display:flex;gap:10px}.row2>*{flex:1}
+.small-note{font-size:12px;color:var(--muted);line-height:1.5;margin-top:10px}
+details{margin-top:8px}summary{color:var(--cyan);font-size:13px;cursor:pointer;min-height:44px;display:flex;align-items:center}
+@media (prefers-reduced-motion:reduce){
+  .orb{transition:transform 1.2s ease}
+  .plankton i,.orb::after{animation:none}
+  .screen{animation:none}
+}
+</style>
+</head>
+<body>
+
+<!-- ======== CONSENT / PRIVACY ======== -->
+<div id="consent" hidden>
+  <div class="wave">◌</div>
+  <h1>Mindwave</h1>
+  <p class="serif" style="color:var(--cyan);font-size:16px;font-style:italic">Your nervous system, listening back.</p>
+  <p>Before you begin, here is exactly how Mindwave treats your information — in line with the New Zealand Privacy Act 2020.</p>
+  <ul>
+    <li>Everything you enter — HRV readings, stress scores, sleep quality, session history — is stored only on this device, in your browser's local storage.</li>
+    <li>Nothing is uploaded, synced, or shared. There is no server and no account.</li>
+    <li>You can view, export, or permanently delete all of your data at any time from the Progress tab.</li>
+    <li>If you later choose to enable AI weekly insights, your summarised weekly numbers (never your identity) are sent to Anthropic's Claude API using a key you provide. This is off by default.</li>
+    <li>Mindwave is a wellness tool, not a medical device. It does not diagnose or treat any condition.</li>
+  </ul>
+  <details>
+    <summary>Your rights under the Privacy Act 2020</summary>
+    <p style="margin-top:8px">Because your data never leaves this device, you hold it directly. Clearing the app's data (Progress → Delete all data, or clearing browser site data) removes everything. Under IPP 6 and 7 you have the right to access and correct personal information — here, you can do both instantly yourself.</p>
+  </details>
+  <div style="flex:1;min-height:20px"></div>
+  <button class="btn btn-primary" onclick="acceptConsent()">I understand — begin</button>
+</div>
+
+<div id="app" hidden>
+<main>
+
+  <!-- ======== HOME ======== -->
+  <section class="screen active" id="tab-home">
+    <div class="eyebrow" id="home-date"></div>
+    <h1 class="page-title" id="greeting">Evening, deep water</h1>
+    <p class="page-sub">How is your system today?</p>
+
+    <div id="rec-slot"></div>
+
+    <div class="stat-row" style="margin-bottom:14px">
+      <div class="stat"><b id="st-streak">0</b><span>day streak</span></div>
+      <div class="stat v"><b id="st-mins">0</b><span>min total</span></div>
+      <div class="stat e"><b id="st-hrv">–</b><span>last hrv</span></div>
+    </div>
+
+    <div class="card">
+      <h3>Log today's biometrics</h3>
+      <p class="hint">From your Garmin, Galaxy Watch, Apple Watch — or however you measure.</p>
+      <label for="in-hrv">HRV (ms)</label>
+      <input type="number" id="in-hrv" inputmode="numeric" placeholder="e.g. 42">
+      <div class="row2">
+        <div>
+          <label for="in-stress">Stress (0–100)</label>
+          <input type="number" id="in-stress" inputmode="numeric" placeholder="optional">
+        </div>
+        <div>
+          <label for="in-sleep">Sleep quality (1–10)</label>
+          <input type="number" id="in-sleep" inputmode="numeric" placeholder="optional">
+        </div>
+      </div>
+      <div style="height:14px"></div>
+      <button class="btn btn-primary" onclick="saveBiometrics()">Save reading</button>
+    </div>
+  </section>
+
+  <!-- ======== BREATHE ======== -->
+  <section class="screen" id="tab-breathe">
+    <div class="eyebrow">Breathwork</div>
+    <h1 class="page-title">Breathe</h1>
+    <p class="page-sub">Choose a pattern. Let the orb set the pace.</p>
+
+    <div id="breathe-setup">
+      <label>Pattern</label>
+      <div class="chip-row" id="pattern-row"></div>
+      <label>Soundscape</label>
+      <div class="chip-row" id="sound-row-b"></div>
+      <label>Duration</label>
+      <div class="chip-row" id="dur-row-b"></div>
+      <div style="height:16px"></div>
+      <button class="btn btn-primary" onclick="startBreath()">Begin session</button>
+    </div>
+
+    <div id="breathe-live" hidden>
+      <div class="session-timer" id="b-timer">10:00</div>
+      <div class="orb-stage">
+        <div class="plankton" id="plankton-b"></div>
+        <div class="orb" id="orb"></div>
+        <div class="orb-label">
+          <div class="orb-phase" id="orb-phase">Inhale</div>
+          <div class="orb-count" id="orb-count">4</div>
+        </div>
+      </div>
+      <button class="btn btn-ghost" onclick="endSession(true)">End session</button>
+    </div>
+  </section>
+
+  <!-- ======== MEDITATE ======== -->
+  <section class="screen" id="tab-meditate">
+    <div class="eyebrow">Stillness</div>
+    <h1 class="page-title">Meditate</h1>
+    <p class="page-sub">Unstructured sitting, held by sound.</p>
+
+    <div id="med-setup">
+      <label>Soundscape</label>
+      <div class="chip-row" id="sound-row-m"></div>
+      <label>Duration</label>
+      <div class="chip-row" id="dur-row-m"></div>
+      <div style="height:16px"></div>
+      <button class="btn btn-primary" onclick="startMeditate()">Begin session</button>
+      <p class="small-note">The sitar and veena scapes carry a gentle binaural offset — theta range on the sitar (Raga Yaman), low-alpha on the veena (Raga Bhairavi). Headphones recommended for those two.</p>
+    </div>
+
+    <div id="med-live" hidden>
+      <div class="session-timer" id="m-timer">15:00</div>
+      <div class="orb-stage">
+        <div class="plankton" id="plankton-m"></div>
+        <div class="orb" id="orb-m" style="transition:transform 9s ease-in-out"></div>
+        <div class="orb-label"><div class="orb-phase serif" id="m-word">Settle</div></div>
+      </div>
+      <button class="btn btn-ghost" onclick="endSession(true)">End session</button>
+    </div>
+  </section>
+
+  <!-- ======== PROGRESS ======== -->
+  <section class="screen" id="tab-progress">
+    <div class="eyebrow">Your arc</div>
+    <h1 class="page-title">Progress</h1>
+    <p class="page-sub">Sessions accumulate. So does calm.</p>
+
+    <div class="stat-row" style="margin-bottom:14px">
+      <div class="stat"><b id="p-streak">0</b><span>streak</span></div>
+      <div class="stat v"><b id="p-sessions">0</b><span>sessions</span></div>
+      <div class="stat e"><b id="p-mins">0</b><span>minutes</span></div>
+    </div>
+
+    <div class="card">
+      <h3>HRV — last 14 readings</h3>
+      <canvas id="hrv-chart" width="640" height="240"></canvas>
+      <p class="hint" id="hrv-trend"></p>
+    </div>
+
+    <div class="card">
+      <h3>Weekly insight</h3>
+      <p class="hint" id="insight-text">Log a few HRV readings and sessions to unlock your weekly pattern.</p>
+      <div id="ai-zone">
+        <details>
+          <summary>AI insight (optional, uses your Claude API key)</summary>
+          <label for="api-key">Anthropic API key — stored only on this device</label>
+          <input type="password" id="api-key" placeholder="sk-ant-...">
+          <div style="height:10px"></div>
+          <button class="btn btn-ghost" onclick="runAIInsight()">Analyse my week with Claude</button>
+        </details>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>Recent sessions</h3>
+      <div id="hist-list"><p class="hint">No sessions yet.</p></div>
+    </div>
+
+    <div class="card">
+      <h3>Your data</h3>
+      <div class="row2">
+        <button class="btn btn-ghost" onclick="exportData()">Export JSON</button>
+        <button class="btn btn-danger" onclick="wipeData()">Delete all data</button>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<nav>
+  <button class="on" data-tab="home" onclick="go('home')">
+    <svg viewBox="0 0 24 24"><path d="M3 11.5 12 4l9 7.5"/><path d="M5.5 10v9h13v-9"/></svg>Home</button>
+  <button data-tab="breathe" onclick="go('breathe')">
+    <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="4.5"/><circle cx="12" cy="12" r="8.5" opacity=".45"/></svg>Breathe</button>
+  <button data-tab="meditate" onclick="go('meditate')">
+    <svg viewBox="0 0 24 24"><path d="M12 4v3"/><path d="M12 4c-3 3.5-3 8 0 11 3-3 3-7.5 0-11z"/><path d="M4 19c2.5-2 13.5-2 16 0"/></svg>Meditate</button>
+  <button data-tab="progress" onclick="go('progress')">
+    <svg viewBox="0 0 24 24"><path d="M4 19V9"/><path d="M10 19V5"/><path d="M16 19v-8"/><path d="M22 19H2"/></svg>Progress</button>
+</nav>
+</div>
+
+<div class="toast" id="toast"></div>
+<script>
+/* =====================================================
+   Mindwave — HRV-adaptive meditation & breathing
+   All data local. All sound synthesised. No servers.
+   ===================================================== */
+
+/* ---------- storage ---------- */
+const DB_KEY='mindwave.v2';
+const load=()=>{try{return JSON.parse(localStorage.getItem(DB_KEY))||{}}catch(e){return{}}};
+const db=Object.assign({consent:false,biometrics:[],sessions:[],apiKey:''},load());
+const save=()=>localStorage.setItem(DB_KEY,JSON.stringify(db));
+
+/* local date — never toISOString (UTC shifts NZ dates a day back) */
+function localDate(d=new Date()){
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+const fmtTime=s=>`${Math.floor(s/60)}:${String(Math.floor(s%60)).padStart(2,'0')}`;
+const $=id=>document.getElementById(id);
+function toast(msg){const t=$('toast');t.textContent=msg;t.classList.add('show');clearTimeout(t._h);t._h=setTimeout(()=>t.classList.remove('show'),2400)}
+
+/* ---------- patterns & soundscapes ---------- */
+const PATTERNS={
+  box:  {name:'Box',    sub:'4·4·6·2', phases:[['Inhale',4],['Hold',4],['Exhale',6],['Hold',2]]},
+  p478: {name:'4-7-8',  sub:'deep sleep', phases:[['Inhale',4],['Hold',7],['Exhale',8]]},
+  p48:  {name:'4-8',    sub:'long exhale', phases:[['Inhale',4],['Exhale',8]]},
+};
+const SOUNDS={
+  waterfall:{name:'Waterfall', sub:'white veil'},
+  rain:     {name:'Forest Rain', sub:'canopy'},
+  ocean:    {name:'Ocean Waves', sub:'swell'},
+  breeze:   {name:'Mountain Breeze', sub:'high air'},
+  sitar:    {name:'Sitar Drone', sub:'Raga Yaman · binaural'},
+  veena:    {name:'Veena', sub:'Raga Bhairavi · binaural'},
+};
+const DURS=[5,10,15,20,30];
+
+/* =====================================================
+   AUDIO ENGINE — Web Audio, fully synthesised
+   ===================================================== */
+let AC=null, master=null, sceneNodes=[], rainTimer=null, pluckTimer=null;
+
+function audioInit(){
+  if(AC) return;
+  AC=new (window.AudioContext||window.webkitAudioContext)();
+  master=AC.createGain(); master.gain.value=0;
+  const comp=AC.createDynamicsCompressor();
+  master.connect(comp); comp.connect(AC.destination);
+}
+function noiseBuffer(type){ // 'white' | 'pink' | 'brown'
+  const len=AC.sampleRate*4, buf=AC.createBuffer(1,len,AC.sampleRate), d=buf.getChannelData(0);
+  if(type==='white'){for(let i=0;i<len;i++)d[i]=Math.random()*2-1;}
+  else if(type==='brown'){let last=0;for(let i=0;i<len;i++){const w=Math.random()*2-1;last=(last+.02*w)/1.02;d[i]=last*3.5;}}
+  else{ /* pink — Paul Kellet */
+    let b0=0,b1=0,b2=0,b3=0,b4=0,b5=0,b6=0;
+    for(let i=0;i<len;i++){const w=Math.random()*2-1;
+      b0=.99886*b0+w*.0555179;b1=.99332*b1+w*.0750759;b2=.969*b2+w*.153852;
+      b3=.8665*b3+w*.3104856;b4=.55*b4+w*.5329522;b5=-.7616*b5-w*.016898;
+      d[i]=(b0+b1+b2+b3+b4+b5+b6+w*.5362)*.11;b6=w*.115926;}
+  }
+  return buf;
+}
+function noiseSource(type){const s=AC.createBufferSource();s.buffer=noiseBuffer(type);s.loop=true;return s;}
+function G(v){const g=AC.createGain();g.gain.value=v;return g;}
+function filt(type,freq,q=1){const f=AC.createBiquadFilter();f.type=type;f.frequency.value=freq;f.Q.value=q;return f;}
+
+/* — drone voice: binaural pair, L at f, R at f+beat — */
+function droneVoice(freq,beat,level,wave='sawtooth',lp=1400){
+  const out=G(0);
+  [[-1,0],[1,beat]].forEach(([pan,off])=>{
+    const o=AC.createOscillator();o.type=wave;o.frequency.value=freq+off;
+    const f=filt('lowpass',lp,0.8), g=G(.5), p=new StereoPannerNode(AC,{pan});
+    o.connect(f);f.connect(g);g.connect(p);p.connect(out);o.start();
+    sceneNodes.push(o);
+  });
+  out.gain.setTargetAtTime(level,AC.currentTime,3);
+  out.connect(master); sceneNodes.push(out);
+  return out;
+}
+/* — tanpura-style pluck cycle over a drone — */
+function pluckCycle(freqs,base,intervalMs,wave,lp){
+  let i=0;
+  const fire=()=>{
+    if(!AC) return;
+    const f=freqs[i%freqs.length]*base; i++;
+    const o=AC.createOscillator();o.type=wave;o.frequency.value=f;
+    const fl=filt('lowpass',lp,2), g=G(0);
+    o.connect(fl);fl.connect(g);g.connect(master);
+    const t=AC.currentTime;
+    g.gain.setValueAtTime(0,t);
+    g.gain.linearRampToValueAtTime(.05,t+.06);
+    g.gain.exponentialRampToValueAtTime(.0001,t+3.2);
+    o.start(t);o.stop(t+3.4);
+  };
+  fire();
+  pluckTimer=setInterval(fire,intervalMs);
+}
+
+const SCENES={
+  waterfall(){
+    const n=noiseSource('brown'), f1=filt('lowpass',900,.7), f2=filt('highpass',120), g=G(.9);
+    n.connect(f1);f1.connect(f2);f2.connect(g);g.connect(master);n.start();
+    const spray=noiseSource('white'), sf=filt('bandpass',3800,1.4), sg=G(.05);
+    spray.connect(sf);sf.connect(sg);sg.connect(master);spray.start();
+    sceneNodes.push(n,spray);
+  },
+  rain(){
+    const n=noiseSource('pink'), f=filt('lowpass',3200,.8), g=G(.5);
+    n.connect(f);f.connect(g);g.connect(master);n.start();sceneNodes.push(n);
+    rainTimer=setInterval(()=>{ /* droplets */
+      if(!AC)return;
+      const o=AC.createOscillator();o.type='sine';
+      o.frequency.value=700+Math.random()*2200;
+      const dg=G(0), p=new StereoPannerNode(AC,{pan:Math.random()*1.6-.8});
+      o.connect(dg);dg.connect(p);p.connect(master);
+      const t=AC.currentTime;
+      dg.gain.setValueAtTime(0,t);dg.gain.linearRampToValueAtTime(.04+Math.random()*.05,t+.008);
+      dg.gain.exponentialRampToValueAtTime(.0001,t+.14);
+      o.start(t);o.stop(t+.2);
+    },260);
+  },
+  ocean(){
+    const n=noiseSource('brown'), f=filt('lowpass',600,.6), g=G(.15);
+    n.connect(f);f.connect(g);g.connect(master);n.start();
+    const lfo=AC.createOscillator();lfo.frequency.value=.08;
+    const lg=G(.55);lfo.connect(lg);lg.connect(g.gain);
+    const flfo=G(320);lfo.connect(flfo);flfo.connect(f.frequency);
+    lfo.start();sceneNodes.push(n,lfo);
+  },
+  breeze(){
+    const n=noiseSource('pink'), f=filt('bandpass',800,.9), g=G(.4);
+    n.connect(f);f.connect(g);g.connect(master);n.start();
+    const lfo=AC.createOscillator();lfo.frequency.value=.05;
+    const lg=G(450);lfo.connect(lg);lg.connect(f.frequency);lfo.start();
+    sceneNodes.push(n,lfo);
+  },
+  sitar(){ /* Raga Yaman — Sa Pa Sa' Ni; 6 Hz binaural (theta) */
+    const Sa=220;
+    droneVoice(Sa,6,.16,'sawtooth',1600);        // Sa
+    droneVoice(Sa*1.5,6,.08,'sawtooth',1400);    // Pa
+    droneVoice(Sa*2,6,.05,'triangle',1800);      // Sa'
+    pluckCycle([1.5,2,1.875,1],Sa,4200,'sawtooth',2600); // Pa Sa' Ni(15/8) Sa
+  },
+  veena(){ /* Raga Bhairavi — komal set; 9 Hz binaural (low alpha) */
+    const Sa=196;
+    droneVoice(Sa,9,.17,'triangle',900);         // Sa (rounder)
+    droneVoice(Sa*1.5,9,.09,'triangle',900);     // Pa
+    droneVoice(Sa*(8/5),9,.045,'sine',1000);     // komal Dha shade
+    pluckCycle([1,6/5,4/3,3/2,9/5],Sa,5200,'triangle',1400); // S g M P n
+  },
+};
+
+function startSound(key){
+  audioInit();
+  if(AC.state==='suspended')AC.resume();
+  stopSound(false);
+  SCENES[key]();
+  master.gain.cancelScheduledValues(AC.currentTime);
+  master.gain.setTargetAtTime(.85,AC.currentTime,1.2);
+}
+function stopSound(fade=true){
+  if(!AC)return;
+  clearInterval(rainTimer);clearInterval(pluckTimer);
+  if(fade)master.gain.setTargetAtTime(0,AC.currentTime,.5);
+  const nodes=sceneNodes;sceneNodes=[];
+  setTimeout(()=>nodes.forEach(n=>{try{n.stop?n.stop():n.disconnect()}catch(e){}}),fade?1200:0);
+}
+
+/* =====================================================
+   SESSION ENGINE — timestamp-based, no setInterval drift
+   ===================================================== */
+let session=null, rafId=null, wakeLock=null;
+
+async function grabWakeLock(){
+  try{ if('wakeLock' in navigator) wakeLock=await navigator.wakeLock.request('screen'); }catch(e){}
+}
+document.addEventListener('visibilitychange',()=>{ if(session&&document.visibilityState==='visible')grabWakeLock(); });
+
+/* selection state */
+const sel={pattern:'p478',soundB:'sitar',durB:10,soundM:'veena',durM:15};
+
+function chipRow(el,items,key,cls='sel'){
+  el.innerHTML='';
+  Object.entries(items).forEach(([k,v])=>{
+    const b=document.createElement('button');
+    b.className='chip'+(sel[key]===k?' '+cls:'');
+    b.innerHTML=`${v.name}<small>${v.sub}</small>`;
+    b.onclick=()=>{sel[key]=k;chipRow(el,items,key,cls)};
+    el.appendChild(b);
+  });
+}
+function durRow(el,key){
+  el.innerHTML='';
+  DURS.forEach(m=>{
+    const b=document.createElement('button');
+    b.className='chip'+(sel[key]===m?' sel-violet':'');
+    b.innerHTML=`${m}<small>min</small>`;
+    b.onclick=()=>{sel[key]=m;durRow(el,key)};
+    el.appendChild(b);
+  });
+}
+
+function seedPlankton(id){
+  const box=$(id); if(box.children.length)return;
+  for(let i=0;i<14;i++){
+    const s=document.createElement('i');
+    s.style.left=(5+Math.random()*90)+'%';
+    s.style.bottom='-10px';
+    s.style.animationDuration=(9+Math.random()*10)+'s';
+    s.style.animationDelay=(Math.random()*9)+'s';
+    box.appendChild(s);
+  }
+}
+
+/* ---------- BREATHE ---------- */
+function startBreath(){
+  const p=PATTERNS[sel.pattern];
+  session={kind:'breathe',pattern:sel.pattern,sound:sel.soundB,dur:sel.durB*60,
+           start:Date.now(),phaseIdx:-1,phaseEnd:0};
+  $('breathe-setup').hidden=true; $('breathe-live').hidden=false;
+  seedPlankton('plankton-b');
+  startSound(sel.soundB); grabWakeLock();
+  nextPhase(); tick();
+}
+function nextPhase(){
+  const p=PATTERNS[session.pattern].phases;
+  session.phaseIdx=(session.phaseIdx+1)%p.length;
+  const [name,secs]=p[session.phaseIdx];
+  session.phaseEnd=performance.now()+secs*1000;
+  $('orb-phase').textContent=name;
+  const orb=$('orb');
+  orb.style.transitionDuration=secs+'s';
+  if(name==='Inhale')orb.style.transform='scale(1.28)';
+  else if(name==='Exhale')orb.style.transform='scale(.72)';
+  /* Hold: leave transform where it is */
+}
+/* ---------- MEDITATE ---------- */
+const MED_WORDS=['Settle','Soften','Here','Deep','Still','Rest','Open'];
+function startMeditate(){
+  session={kind:'meditate',sound:sel.soundM,dur:sel.durM*60,start:Date.now(),word:0,wordEnd:0};
+  $('med-setup').hidden=true; $('med-live').hidden=false;
+  seedPlankton('plankton-m');
+  startSound(sel.soundM); grabWakeLock();
+  const orb=$('orb-m'); orb.style.transform='scale(1.15)'; session.grow=true;
+  session.orbEnd=performance.now()+9000;
+  tick();
+}
+
+/* ---------- shared tick ---------- */
+function tick(){
+  if(!session)return;
+  const now=performance.now();
+  const elapsed=(Date.now()-session.start)/1000;
+  const left=Math.max(0,session.dur-elapsed);
+  if(session.kind==='breathe'){
+    $('b-timer').textContent=fmtTime(left);
+    const rem=Math.max(0,(session.phaseEnd-now)/1000);
+    $('orb-count').textContent=Math.ceil(rem)||'';
+    if(rem<=0)nextPhase();
+  }else{
+    $('m-timer').textContent=fmtTime(left);
+    if(now>=session.orbEnd){ /* slow ambient swell every 9s */
+      session.grow=!session.grow; session.orbEnd=now+9000;
+      $('orb-m').style.transform=session.grow?'scale(1.15)':'scale(.85)';
+      session.word=(session.word+1)%MED_WORDS.length;
+      $('m-word').textContent=MED_WORDS[session.word];
+    }
+  }
+  if(left<=0){endSession(false);return;}
+  rafId=requestAnimationFrame(tick);
+}
+
+function endSession(manual){
+  if(!session)return;
+  cancelAnimationFrame(rafId);
+  const mins=Math.max(1,Math.round((Date.now()-session.start)/60000));
+  db.sessions.push({date:localDate(),ts:Date.now(),kind:session.kind,
+    pattern:session.pattern||null,sound:session.sound,mins});
+  save();
+  stopSound(true);
+  try{wakeLock&&wakeLock.release()}catch(e){} wakeLock=null;
+  const kind=session.kind; session=null;
+  if(kind==='breathe'){$('breathe-live').hidden=true;$('breathe-setup').hidden=false;}
+  else{$('med-live').hidden=true;$('med-setup').hidden=false;}
+  toast(manual?`Session saved — ${mins} min`:`Complete — ${mins} min. Well held.`);
+  renderStats();renderProgress();renderRecommendation();
+}
+
+/* =====================================================
+   BIOMETRICS + RECOMMENDATION
+   ===================================================== */
+function saveBiometrics(){
+  const hrv=parseFloat($('in-hrv').value);
+  if(!hrv||hrv<5||hrv>250){toast('Enter an HRV between 5 and 250 ms');return;}
+  const stress=parseFloat($('in-stress').value)||null;
+  const sleep=parseFloat($('in-sleep').value)||null;
+  /* one reading per day — latest wins */
+  db.biometrics=db.biometrics.filter(b=>b.date!==localDate());
+  db.biometrics.push({date:localDate(),ts:Date.now(),hrv,stress,sleep});
+  db.biometrics.sort((a,b)=>a.ts-b.ts);
+  save();
+  $('in-hrv').value='';$('in-stress').value='';$('in-sleep').value='';
+  toast('Reading saved');
+  renderStats();renderRecommendation();renderProgress();
+}
+function baseline(){
+  const last=db.biometrics.slice(-7);
+  if(!last.length)return null;
+  return last.reduce((s,b)=>s+b.hrv,0)/last.length;
+}
+function renderRecommendation(){
+  const slot=$('rec-slot'); const bio=db.biometrics.at(-1);
+  if(!bio){slot.innerHTML='';return;}
+  const base=baseline(), hour=new Date().getHours();
+  let rec;
+  if(bio.hrv<base*0.9 || (bio.stress&&bio.stress>65)){
+    rec={p:'p48',s:'ocean',d:15,tag:'System under load',
+      why:`HRV ${Math.round(bio.hrv)} ms is below your recent baseline of ${Math.round(base)}. Extended exhale (4-8) leans on the vagal brake — with ocean swell to slow everything down.`};
+  }else if(hour>=20 || (bio.sleep&&bio.sleep<5)){
+    rec={p:'p478',s:'veena',d:10,tag:'Wind-down window',
+      why:`Evening, and your sleep signal says be gentle. 4-7-8 with the Bhairavi veena drone — the classic pre-sleep pairing.`};
+  }else if(bio.hrv>base*1.08){
+    rec={p:'box',s:'breeze',d:10,tag:'System recovered',
+      why:`HRV ${Math.round(bio.hrv)} ms is riding above baseline. Box breathing to consolidate — keep the streak, keep the state.`};
+  }else{
+    rec={p:'p478',s:'sitar',d:10,tag:'Steady state',
+      why:`Holding near baseline (${Math.round(base)} ms). A 4-7-8 sit with the Yaman sitar drone deepens the trend without forcing it.`};
+  }
+  const P=PATTERNS[rec.p],S=SOUNDS[rec.s];
+  slot.innerHTML=`<div class="rec-banner">
+    <div class="tag">${rec.tag}</div>
+    <h3>${P.name} · ${S.name} · ${rec.d} min</h3>
+    <p>${rec.why}</p>
+    <div style="height:12px"></div>
+    <button class="btn btn-primary" id="rec-go">Start this session</button>
+  </div>`;
+  $('rec-go').onclick=()=>{
+    sel.pattern=rec.p;sel.soundB=rec.s;sel.durB=rec.d;
+    go('breathe');renderPickers();startBreath();
+  };
+}
+
+/* =====================================================
+   PROGRESS: stats, chart, history, insight
+   ===================================================== */
+function streak(){
+  const days=new Set(db.sessions.map(s=>s.date));
+  let n=0, d=new Date();
+  if(!days.has(localDate(d))){d.setDate(d.getDate()-1);} /* today not yet done — count from yesterday */
+  while(days.has(localDate(d))){n++;d.setDate(d.getDate()-1);}
+  return n;
+}
+function renderStats(){
+  const mins=db.sessions.reduce((s,x)=>s+x.mins,0);
+  $('st-streak').textContent=streak();
+  $('st-mins').textContent=mins;
+  const bio=db.biometrics.at(-1);
+  $('st-hrv').textContent=bio?Math.round(bio.hrv):'–';
+}
+function renderProgress(){
+  $('p-streak').textContent=streak();
+  $('p-sessions').textContent=db.sessions.length;
+  $('p-mins').textContent=db.sessions.reduce((s,x)=>s+x.mins,0);
+  /* history */
+  const list=$('hist-list');
+  if(!db.sessions.length){list.innerHTML='<p class="hint">No sessions yet.</p>';}
+  else{
+    list.innerHTML=db.sessions.slice(-8).reverse().map(s=>{
+      const nm=s.kind==='breathe'?`${PATTERNS[s.pattern]?.name||''} breathing`:'Meditation';
+      return `<div class="hist"><div class="l"><b>${nm}</b><span>${s.date} · ${SOUNDS[s.sound]?.name||''}</span></div><div class="r">${s.mins} min</div></div>`;
+    }).join('');
+  }
+  drawChart();
+  $('insight-text').textContent=ruleInsight();
+}
+function drawChart(){
+  const c=$('hrv-chart'),ctx=c.getContext('2d');
+  ctx.clearRect(0,0,c.width,c.height);
+  const data=db.biometrics.slice(-14);
+  if(data.length<2){ctx.fillStyle='#64788f';ctx.font='22px Outfit';ctx.fillText('Log at least two HRV readings',40,130);$('hrv-trend').textContent='';return;}
+  const vals=data.map(d=>d.hrv);
+  const min=Math.min(...vals)-5,max=Math.max(...vals)+5;
+  const X=i=>40+(i/(data.length-1))*(c.width-80);
+  const Y=v=>c.height-30-((v-min)/(max-min))*(c.height-60);
+  /* baseline band */
+  const base=baseline();
+  ctx.strokeStyle='rgba(139,127,240,.5)';ctx.setLineDash([6,6]);ctx.beginPath();
+  ctx.moveTo(40,Y(base));ctx.lineTo(c.width-40,Y(base));ctx.stroke();ctx.setLineDash([]);
+  /* glow line */
+  ctx.shadowColor='rgba(77,232,224,.8)';ctx.shadowBlur=14;
+  ctx.strokeStyle='#4de8e0';ctx.lineWidth=3;ctx.beginPath();
+  data.forEach((d,i)=>i?ctx.lineTo(X(i),Y(d.hrv)):ctx.moveTo(X(0),Y(d.hrv)));
+  ctx.stroke();ctx.shadowBlur=0;
+  ctx.fillStyle='#eafffd';
+  data.forEach((d,i)=>{ctx.beginPath();ctx.arc(X(i),Y(d.hrv),4,0,7);ctx.fill();});
+  const first=vals.slice(0,Math.ceil(vals.length/2)),second=vals.slice(Math.ceil(vals.length/2));
+  const avg=a=>a.reduce((s,v)=>s+v,0)/a.length;
+  const delta=avg(second)-avg(first);
+  $('hrv-trend').textContent=`Dashed line = 7-day baseline (${Math.round(base)} ms). Trend: ${delta>=1?'rising ↑ +':delta<=-1?'easing ↓ ':'holding · '}${Math.abs(Math.round(delta))} ms across this window.`;
+}
+function ruleInsight(){
+  const bios=db.biometrics.slice(-7),ses=db.sessions.filter(s=>Date.now()-s.ts<7*864e5);
+  if(bios.length<3&&ses.length<3)return'Log a few HRV readings and sessions to unlock your weekly pattern.';
+  const parts=[];
+  if(ses.length){const mins=ses.reduce((s,x)=>s+x.mins,0);parts.push(`${ses.length} session${ses.length>1?'s':''} this week — ${mins} minutes of practice.`);}
+  if(bios.length>=3){
+    const half=Math.ceil(bios.length/2);
+    const d=bios.slice(half).reduce((s,b)=>s+b.hrv,0)/(bios.length-half)-bios.slice(0,half).reduce((s,b)=>s+b.hrv,0)/half;
+    parts.push(d>1.5?`HRV climbed ~${Math.round(d)} ms across the week — your system is absorbing the practice.`:d<-1.5?`HRV eased ~${Math.abs(Math.round(d))} ms — favour extended-exhale sessions and earlier nights this week.`:`HRV is holding steady — consistency is doing its quiet work.`);
+  }
+  const days=new Set(ses.map(s=>s.date)).size;
+  if(days>=5)parts.push('Practised on '+days+' of the last 7 days. That rhythm matters more than any single session.');
+  return parts.join(' ');
+}
+
+/* ---------- optional Claude AI insight ---------- */
+async function runAIInsight(){
+  const key=$('api-key').value.trim()||db.apiKey;
+  if(!key){toast('Paste your Anthropic API key first');return;}
+  db.apiKey=key;save();
+  const payload={bios:db.biometrics.slice(-7),sessions:db.sessions.slice(-14).map(s=>({date:s.date,kind:s.kind,pattern:s.pattern,mins:s.mins}))};
+  $('insight-text').textContent='Listening to your week…';
+  try{
+    const r=await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
+      body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:300,messages:[{role:'user',content:
+        `You are the insight engine inside Mindwave, an HRV-adaptive meditation app. Here is a user's anonymous week of data: ${JSON.stringify(payload)}. In 3 short sentences, plain warm language, no headers or lists: describe their HRV trend, how their practice pattern relates to it, and one specific suggestion for next week (pattern + soundscape from: Box, 4-7-8, 4-8; Waterfall, Forest Rain, Ocean Waves, Mountain Breeze, Sitar Drone, Veena).`}]})
+    });
+    const j=await r.json();
+    const txt=(j.content||[]).filter(b=>b.type==='text').map(b=>b.text).join(' ').trim();
+    $('insight-text').textContent=txt||ruleInsight();
+  }catch(e){
+    $('insight-text').textContent=ruleInsight();
+    toast('Could not reach Claude — showing local insight');
+  }
+}
+
+/* ---------- data controls ---------- */
+function exportData(){
+  const blob=new Blob([JSON.stringify(db,null,2)],{type:'application/json'});
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);a.download=`mindwave-export-${localDate()}.json`;a.click();
+  toast('Exported');
+}
+function wipeData(){
+  if(!confirm('Delete all Mindwave data from this device? This cannot be undone.'))return;
+  localStorage.removeItem(DB_KEY);location.reload();
+}
+
+/* =====================================================
+   NAV + INIT
+   ===================================================== */
+function go(tab){
+  if(session){toast('End your session first');return;}
+  document.querySelectorAll('.screen').forEach(s=>s.classList.toggle('active',s.id==='tab-'+tab));
+  document.querySelectorAll('nav button').forEach(b=>b.classList.toggle('on',b.dataset.tab===tab));
+  if(tab==='progress')renderProgress();
+}
+function renderPickers(){
+  chipRow($('pattern-row'),PATTERNS,'pattern');
+  chipRow($('sound-row-b'),SOUNDS,'soundB');
+  chipRow($('sound-row-m'),SOUNDS,'soundM');
+  durRow($('dur-row-b'),'durB');
+  durRow($('dur-row-m'),'durM');
+}
+function acceptConsent(){
+  db.consent=true;save();
+  $('consent').hidden=true;$('app').hidden=false;
+  boot();
+}
+function boot(){
+  const h=new Date().getHours();
+  $('greeting').textContent=(h<12?'Morning':h<17?'Afternoon':'Evening')+', deep water';
+  $('home-date').textContent=new Date().toLocaleDateString('en-NZ',{weekday:'long',day:'numeric',month:'long'});
+  if(db.apiKey)$('api-key').value=db.apiKey;
+  renderPickers();renderStats();renderRecommendation();renderProgress();
+}
+/* pause audio politely if tab hidden mid-session? keep playing — meditation continues with screen off where OS allows */
+window.addEventListener('pagehide',()=>{if(session)endSession(true);});
+
+if(db.consent){$('app').hidden=false;boot();}
+else{$('consent').hidden=false;}
+
+/* ---------- PWA ---------- */
+if('serviceWorker' in navigator){
+  window.addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));
+}
+</script>
+</body>
+</html>
